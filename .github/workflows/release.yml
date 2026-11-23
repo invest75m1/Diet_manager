@@ -1,0 +1,50 @@
+name: Testy a balík na nasadenie
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: pdo_sqlite, gd, curl, mbstring
+          tools: composer:v2
+
+      - name: Inštalácia knižníc
+        run: cd app && composer install --no-dev --prefer-dist --no-interaction
+
+      - name: Integračné testy API (SQLite)
+        run: |
+          STORE=$(mktemp -d)
+          php -S 127.0.0.1:8098 tests/mock_anthropic.php > /dev/null 2>&1 &
+          DM_CONFIG=$STORE/config.php DM_STORAGE_DIR=$STORE ANTHROPIC_API_KEY=test DM_ANTHROPIC_BASE_URL=http://127.0.0.1:8098 \
+            php -S 127.0.0.1:8099 -t public > /dev/null 2>&1 &
+          sleep 1
+          curl -sf -X POST http://127.0.0.1:8099/install.php -d db_driver=sqlite -d admin_username=admin \
+            -d admin_password=heslo1234 -d admin_password2=heslo1234 | grep -q "Inštalácia dokončená"
+          php tests/api_test.php http://127.0.0.1:8099 admin heslo1234
+
+      - name: Vytvorenie balíka
+        run: bin/build-release.sh "${GITHUB_REF_NAME//\//-}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diet-manager
+          path: dist/*.zip
+
+      - name: Zverejnenie vydania (pri značke v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip

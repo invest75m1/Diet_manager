@@ -1,0 +1,31 @@
+# Lokálne spustenie alebo nasadenie na VPS:  docker compose up -d   → http://localhost:8080
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DM_DB_DRIVER: mysql
+      DM_DB_HOST: db
+      DM_DB_NAME: diet
+      DM_DB_USER: diet
+      DM_DB_PASS: ${DB_PASSWORD:-zmente-heslo}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - appdata:/data
+    depends_on:
+      - db
+    restart: unless-stopped
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: diet
+      MARIADB_USER: diet
+      MARIADB_PASSWORD: ${DB_PASSWORD:-zmente-heslo}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - dbdata:/var/lib/mysql
+    restart: unless-stopped
+volumes:
+  appdata:
+  dbdata:

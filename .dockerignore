@@ -1,0 +1,8 @@
+.git
+app/vendor
+app/config.php
+app/storage/photos/*
+app/storage/backups/*
+app/storage/logs/*
+dist
+tests

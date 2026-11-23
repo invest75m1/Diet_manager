@@ -1,0 +1,10 @@
+app/vendor/
+app/config.php
+app/storage/photos/*
+app/storage/backups/*
+app/storage/logs/*
+app/storage/sessions/
+app/storage/*.sqlite*
+!app/storage/**/.gitkeep
+/dist/
+.DS_Store
